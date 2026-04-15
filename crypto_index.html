@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Encryption & Decryption System</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:      #06040F;
+      --bg2:     #0C0820;
+      --card:    #100D25;
+      --border:  #1E1840;
+      --purple:  #9B5DE5;
+      --pink:    #F72585;
+      --cyan:    #4CC9F0;
+      --green:   #06D6A0;
+      --yellow:  #FFD166;
+      --red:     #EF233C;
+      --text:    #E2D9F3;
+      --muted:   #6B6190;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(155,93,229,0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(247,37,133,0.05) 0%, transparent 50%),
+        linear-gradient(rgba(30,24,64,0.4) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(30,24,64,0.4) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: var(--purple); border-radius: 2px; }
+
+    /* ── HEADER ── */
+    header {
+      position: relative; z-index: 10;
+      padding: 1.2rem 2.5rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(6,4,15,0.92);
+      backdrop-filter: blur(20px);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .logo { display: flex; align-items: center; gap: 1rem; }
+
+    .logo-icon {
+      width: 42px; height: 42px;
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+      box-shadow: 0 0 20px rgba(155,93,229,0.4);
+    }
+
+    .logo-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 1rem; font-weight: 900;
+      background: linear-gradient(90deg, var(--purple), var(--pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 2px;
+    }
+
+    .logo-sub { font-size: 0.6rem; color: var(--muted); letter-spacing: 2px; margin-top: 2px; }
+
+    .header-badges { display: flex; gap: 0.6rem; }
+
+    .badge {
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.62rem;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+
+    .badge-aes { background: rgba(76,201,240,0.12); color: var(--cyan); border: 1px solid rgba(76,201,240,0.2); }
+    .badge-rsa { background: rgba(155,93,229,0.12); color: var(--purple); border: 1px solid rgba(155,93,229,0.2); }
+
+    /* ── TABS ── */
+    .tabs-wrapper {
+      position: relative; z-index: 1;
+      display: flex; justify-content: center;
+      padding: 2rem 2rem 0;
+      gap: 0.5rem;
+    }
+
+    .tab-btn {
+      padding: 0.7rem 2.5rem;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--muted);
+      font-family: 'Orbitron', monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: var(--text);
+      border-bottom-color: transparent;
+    }
+
+    .tab-btn.aes.active {
+      background: linear-gradient(135deg, rgba(76,201,240,0.1), rgba(6,214,160,0.08));
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
+    .tab-btn.rsa.active {
+      background: linear-gradient(135deg, rgba(155,93,229,0.12), rgba(247,37,133,0.08));
+      border-color: var(--purple);
+      color: var(--purple);
+    }
+
+    /* ── MAIN ── */
+    .main {
+      position: relative; z-index: 1;
+      max-width: 1200px; margin: 0 auto;
+      padding: 0 2rem 3rem;
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.8rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+
+    .card.cyan::before { background: linear-gradient(90deg, var(--cyan), var(--green)); }
+    .card.purple::before { background: linear-gradient(90deg, var(--purple), var(--pink)); }
+    .card.green::before { background: linear-gradient(90deg, var(--green), var(--cyan)); }
+
+    .card-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 1.3rem;
+    }
+
+    .cyan .card-title { color: var(--cyan); }
+    .purple .card-title { color: var(--purple); }
+    .green .card-title { color: var(--green); }
+
+    /* ── GRID ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 1.5rem; }
+
+    /* ── FORM ELEMENTS ── */
+    label {
+      display: block;
+      font-size: 0.65rem; color: var(--muted);
+      letter-spacing: 1px; text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    textarea, input, select {
+      width: 100%;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      padding: 0.7rem 0.9rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      resize: vertical;
+    }
+
+    textarea:focus, input:focus, select:focus {
+      border-color: var(--purple);
+      box-shadow: 0 0 0 2px rgba(155,93,229,0.1);
+    }
+
+    textarea { min-height: 110px; }
+
+    select option { background: var(--card); }
+
+    .input-group { margin-bottom: 1rem; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none; border-radius: 8px;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 1px; cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+    }
+
+    .btn-cyan {
+      background: linear-gradient(135deg, var(--cyan), var(--green));
+      color: var(--bg);
+    }
+    .btn-cyan:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(76,201,240,0.3); }
+
+    .btn-purple {
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      color: white;
+    }
+    .btn-purple:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(155,93,229,0.35); }
+
+    .btn-green {
+      background: linear-gradient(135deg, var(--green), #04b589);
+      color: var(--bg);
+    }
+    .btn-green:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(6,214,160,0.3); }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .btn-outline:hover { border-color: var(--purple); color: var(--purple); }
+
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+    .btn-row { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 1rem; }
+
+    /* ── OUTPUT BOX ── */
+    .output-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      font-size: 0.72rem;
+      word-break: break-all;
+      min-height: 80px;
+      position: relative;
+      line-height: 1.7;
+    }
+
+    .output-label {
+      position: absolute;
+      top: -10px; left: 12px;
+      background: var(--card);
+      padding: 0 6px;
+      font-size: 0.58rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    .output-box.success { border-color: rgba(6,214,160,0.3); color: var(--green); }
+    .output-box.error   { border-color: rgba(239,35,60,0.3);  color: var(--red); }
+    .output-box.cyan    { color: var(--cyan); }
+    .output-box.purple  { color: #c49ef5; }
+
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      padding: 0.25rem 0.6rem;
+      background: rgba(155,93,229,0.12);
+      border: 1px solid rgba(155,93,229,0.2);
+      border-radius: 4px;
+      color: var(--purple);
+      font-size: 0.6rem;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover { background: rgba(155,93,229,0.25); }
+
+    /* ── KEY BOX ── */
+    .key-box {
+      background: var(--bg);
+      border: 1px dashed rgba(255,209,102,0.3);
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      font-size: 0.65rem;
+      word-break: break-all;
+      color: var(--yellow);
+      margin-top: 0.8rem;
+      position: relative;
+    }
+
+    .key-label {
+      font-size: 0.58rem; color: var(--muted);
+      letter-spacing: 1px; margin-bottom: 0.3rem;
+      text-transform: uppercase;
+    }
+
+    /* ── INFO BOX ── */
+    .info-box {
+      background: rgba(76,201,240,0.05);
+      border: 1px solid rgba(76,201,240,0.15);
+      border-radius: 8px;
+      padding: 0.9rem 1.1rem;
+      font-size: 0.7rem;
+      color: var(--cyan);
+      margin-bottom: 1.2rem;
+      line-height: 1.7;
+    }
+
+    .info-box.purple-info {
+      background: rgba(155,93,229,0.05);
+      border-color: rgba(155,93,229,0.15);
+      color: #c49ef5;
+    }
+
+    /* ── SPINNER ── */
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── COMPARE TABLE ── */
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.72rem;
+      margin-top: 1rem;
+    }
+
+    .compare-table th {
+      background: var(--bg2);
+      color: var(--muted);
+      padding: 0.7rem 1rem;
+      text-align: left;
+      font-size: 0.6rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .compare-table td {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid rgba(30,24,64,0.5);
+    }
+
+    .compare-table tr:hover td { background: rgba(155,93,229,0.04); }
+
+    /* responsive */
+    @media(max-width:768px) {
+      .two-col, .three-col { grid-template-columns: 1fr; }
+      .header-badges { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🔐</div>
+    <div>
+      <div class="logo-title">CRYPTO SYSTEM</div>
+      <div class="logo-sub">Encryption & Decryption Tool</div>
+    </div>
+  </div>
+  <div class="header-badges">
+    <span class="badge badge-aes">AES-256</span>
+    <span class="badge badge-rsa">RSA-2048</span>
+  </div>
+</header>
+
+<!-- TABS -->
+<div class="tabs-wrapper">
+  <button class="tab-btn aes active" onclick="switchTab('aes', this)">🔑 AES Encryption</button>
+  <button class="tab-btn rsa" onclick="switchTab('rsa', this)">🔏 RSA Encryption</button>
+</div>
+
+<div class="main">
+
+  <!-- ═══════ AES TAB ═══════ -->
+  <div class="tab-content active" id="tab-aes">
+
+    <!-- Info -->
+    <div class="info-box" style="margin-top:1.5rem">
+      ℹ AES (Advanced Encryption Standard) — Symmetric encryption. Same key is used to encrypt and decrypt. Best for large text and files. Supports 128-bit, 192-bit, and 256-bit key sizes.
+    </div>
+
+    <!-- Encrypt Section -->
+    <div class="card cyan">
+      <div class="card-title">🔒 AES — Encrypt Text</div>
+
+      <div class="two-col">
+        <div>
+          <div class="input-group">
+            <label>Plain Text to Encrypt</label>
+            <textarea id="aes-plaintext" placeholder="Enter your secret message here..."></textarea>
+          </div>
+          <div class="input-group">
+            <label>Key Size</label>
+            <select id="aes-keysize">
+              <option value="256">AES-256 (Recommended)</option>
+              <option value="192">AES-192</option>
+              <option value="128">AES-128</option>
+            </select>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-cyan" onclick="aesEncrypt()">
+              <span class="spinner" id="enc-spinner"></span>
+              🔒 Encrypt
+            </button>
+            <button class="btn btn-outline" onclick="clearAES()">✕ Clear</button>
+          </div>
+        </div>
+
+        <div>
+          <div style="position:relative; margin-bottom:1rem;">
+            <div class="output-box cyan" id="aes-ciphertext-out">
+              <span class="output-label">CIPHERTEXT</span>
+              <span style="color:var(--muted)">Encrypted text will appear here...</span>
+            </div>
+            <button class="copy-btn" onclick="copyText('aes-ciphertext-out')">Copy</button>
+          </div>
+
+          <div class="key-box" id="aes-keys-out" style="display:none">
+            <div class="key-label">⚠ Save these keys — needed for decryption!</div>
+            <div><span style="color:var(--muted)">KEY: </span><span id="aes-key-val"></span></div>
+            <div style="margin-top:0.4rem"><span style="color:var(--muted)">IV:  </span><span id="aes-iv-val"></span></div>
+            <button class="copy-btn" style="top:8px" onclick="copyKeys()">Copy Keys</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Decrypt Section -->
+    <div class="card green" style="margin-top:1.5rem">
+      <div class="card-title">🔓 AES — Decrypt Text</div>
+
+      <div class="two-col">
+        <div>
+          <div class="input-group">
+            <label>Ciphertext (Base64)</label>
+            <textarea id="aes-dec-cipher" placeholder="Paste encrypted ciphertext here..."></textarea>
+          </div>
+          <div class="input-group">
+            <label>Key (Base64)</label>
+            <input id="aes-dec-key" type="text" placeholder="Paste your AES key here..."/>
+          </div>
+          <div class="input-group">
+            <label>IV (Base64)</label>
+            <input id="aes-dec-iv" type="text" placeholder="Paste your IV here..."/>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-green" onclick="aesDecrypt()">🔓 Decrypt</button>
+          </div>
+        </div>
+
+        <div>
+          <div style="position:relative">
+            <div class="output-box" id="aes-dec-out" style="min-height:200px">
+              <span class="output-label">DECRYPTED TEXT</span>
+              <span style="color:var(--muted)">Decrypted text will appear here...</span>
+            </div>
+            <button class="copy-btn" onclick="copyText('aes-dec-out')">Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════ RSA TAB ═══════ -->
+  <div class="tab-content" id="tab-rsa">
+
+    <div class="info-box purple-info" style="margin-top:1.5rem">
+      ℹ RSA (Rivest–Shamir–Adleman) — Asymmetric encryption. Uses two keys: Public Key to encrypt, Private Key to decrypt. Best for short messages and secure key exchange. Max ~190 characters.
+    </div>
+
+    <!-- Step 1: Generate Keys -->
+    <div class="card purple">
+      <div class="card-title">⚡ Step 1 — Generate RSA Key Pair (2048-bit)</div>
+      <p style="font-size:0.72rem; color:var(--muted); margin-bottom:1rem;">Generate a fresh Public + Private key pair. Share the Public Key with sender, keep Private Key secret.</p>
+
+      <button class="btn btn-purple" onclick="generateRSAKeys()">
+        <span class="spinner" id="rsa-keygen-spinner"></span>
+        ⚡ Generate Keys
+      </button>
+
+      <div class="two-col" style="margin-top:1.2rem">
+        <div style="position:relative">
+          <div class="output-box purple" id="rsa-public-out" style="min-height:150px; font-size:0.62rem">
+            <span class="output-label">PUBLIC KEY</span>
+            <span style="color:var(--muted)">Click Generate to create keys...</span>
+          </div>
+          <button class="copy-btn" onclick="copyText('rsa-public-out')">Copy</button>
+        </div>
+        <div style="position:relative">
+          <div class="output-box" id="rsa-private-out" style="min-height:150px; font-size:0.62rem; color:var(--yellow)">
+            <span class="output-label">PRIVATE KEY (Keep Secret!)</span>
+            <span style="color:var(--muted)">Click Generate to create keys...</span>
+          </div>
+          <button class="copy-btn" onclick="copyText('rsa-private-out')">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Encrypt -->
+    <div class="card cyan" style="margin-top:1.5rem">
+      <div class="card-title">🔒 Step 2 — RSA Encrypt</div>
+
+      <div class="two-col">
+        <div>
+          <div class="input-group">
+            <label>Plain Text (max ~190 chars)</label>
+            <textarea id="rsa-plaintext" placeholder="Enter short message to encrypt..." style="min-height:80px"></textarea>
+          </div>
+          <div class="input-group">
+            <label>Public Key (paste from above)</label>
+            <textarea id="rsa-enc-pubkey" placeholder="Paste public key here..." style="min-height:100px; font-size:0.62rem"></textarea>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-cyan" onclick="rsaEncrypt()">🔒 Encrypt with Public Key</button>
+          </div>
+        </div>
+        <div style="position:relative">
+          <div class="output-box cyan" id="rsa-enc-out" style="min-height:220px; font-size:0.65rem">
+            <span class="output-label">RSA CIPHERTEXT</span>
+            <span style="color:var(--muted)">Encrypted output will appear here...</span>
+          </div>
+          <button class="copy-btn" onclick="copyText('rsa-enc-out')">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Decrypt -->
+    <div class="card green" style="margin-top:1.5rem">
+      <div class="card-title">🔓 Step 3 — RSA Decrypt</div>
+
+      <div class="two-col">
+        <div>
+          <div class="input-group">
+            <label>Ciphertext (Base64)</label>
+            <textarea id="rsa-dec-cipher" placeholder="Paste RSA ciphertext here..." style="min-height:80px"></textarea>
+          </div>
+          <div class="input-group">
+            <label>Private Key</label>
+            <textarea id="rsa-dec-privkey" placeholder="Paste your private key here..." style="min-height:100px; font-size:0.62rem"></textarea>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-green" onclick="rsaDecrypt()">🔓 Decrypt with Private Key</button>
+          </div>
+        </div>
+        <div style="position:relative">
+          <div class="output-box" id="rsa-dec-out" style="min-height:220px">
+            <span class="output-label">DECRYPTED TEXT</span>
+            <span style="color:var(--muted)">Decrypted text will appear here...</span>
+          </div>
+          <button class="copy-btn" onclick="copyText('rsa-dec-out')">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AES vs RSA comparison -->
+    <div class="card purple" style="margin-top:1.5rem">
+      <div class="card-title">📊 AES vs RSA — Comparison</div>
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th style="color:var(--cyan)">AES</th>
+            <th style="color:var(--purple)">RSA</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="color:var(--muted)">Type</td><td style="color:var(--cyan)">Symmetric</td><td style="color:var(--purple)">Asymmetric</td></tr>
+          <tr><td style="color:var(--muted)">Keys</td><td style="color:var(--cyan)">1 (same for enc/dec)</td><td style="color:var(--purple)">2 (public + private)</td></tr>
+          <tr><td style="color:var(--muted)">Speed</td><td style="color:var(--cyan)">⚡ Very Fast</td><td style="color:var(--purple)">🐢 Slow</td></tr>
+          <tr><td style="color:var(--muted)">Data Size</td><td style="color:var(--cyan)">Any size</td><td style="color:var(--purple)">~190 chars max</td></tr>
+          <tr><td style="color:var(--muted)">Use Case</td><td style="color:var(--cyan)">Files, large data</td><td style="color:var(--purple)">Key exchange, signatures</td></tr>
+          <tr><td style="color:var(--muted)">Key Size</td><td style="color:var(--cyan)">128/192/256 bit</td><td style="color:var(--purple)">2048 bit</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ── Tab switching ──
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // ── Helpers ──
+  function setOutput(id, text, cls = '') {
+    const el = document.getElementById(id);
+    const label = el.querySelector('.output-label');
+    el.className = 'output-box ' + cls;
+    el.innerHTML = '';
+    if (label) el.appendChild(label);
+    el.appendChild(document.createTextNode(text));
+  }
+
+  function copyText(id) {
+    const el = document.getElementById(id);
+    const text = el.innerText.replace(/^[A-Z ]+\n/, '').trim();
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = el.parentElement.querySelector('.copy-btn');
+      if (btn) { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 1500); }
+    });
+  }
+
+  function copyKeys() {
+    const key = document.getElementById('aes-key-val').textContent;
+    const iv  = document.getElementById('aes-iv-val').textContent;
+    navigator.clipboard.writeText(`KEY: ${key}\nIV: ${iv}`);
+  }
+
+  function showSpinner(id, show) {
+    document.getElementById(id).style.display = show ? 'block' : 'none';
+  }
+
+  // ══════════════════════════
+  //  AES ENCRYPT
+  // ══════════════════════════
+  async function aesEncrypt() {
+    const text    = document.getElementById('aes-plaintext').value.trim();
+    const keySize = document.getElementById('aes-keysize').value;
+    if (!text) { alert('Please enter text to encrypt!'); return; }
+
+    showSpinner('enc-spinner', true);
+    try {
+      const res  = await fetch('/aes/encrypt', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({text, keySize})
+      });
+      const data = await res.json();
+      showSpinner('enc-spinner', false);
+
+      if (data.success) {
+        document.getElementById('aes-ciphertext-out').innerHTML =
+          `<span class="output-label">CIPHERTEXT</span>${data.ciphertext}`;
+        document.getElementById('aes-ciphertext-out').className = 'output-box cyan';
+
+        document.getElementById('aes-key-val').textContent = data.key;
+        document.getElementById('aes-iv-val').textContent  = data.iv;
+        document.getElementById('aes-keys-out').style.display = 'block';
+
+        // Auto-fill decrypt fields
+        document.getElementById('aes-dec-cipher').value = data.ciphertext;
+        document.getElementById('aes-dec-key').value    = data.key;
+        document.getElementById('aes-dec-iv').value     = data.iv;
+      } else {
+        setOutput('aes-ciphertext-out', '❌ ' + data.error, 'error');
+      }
+    } catch (e) {
+      showSpinner('enc-spinner', false);
+      setOutput('aes-ciphertext-out', '❌ Server error', 'error');
+    }
+  }
+
+  // ══════════════════════════
+  //  AES DECRYPT
+  // ══════════════════════════
+  async function aesDecrypt() {
+    const ciphertext = document.getElementById('aes-dec-cipher').value.trim();
+    const key        = document.getElementById('aes-dec-key').value.trim();
+    const iv         = document.getElementById('aes-dec-iv').value.trim();
+    if (!ciphertext || !key || !iv) { alert('Please fill all fields!'); return; }
+
+    try {
+      const res  = await fetch('/aes/decrypt', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ciphertext, key, iv})
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOutput('aes-dec-out', data.plaintext, 'success');
+      } else {
+        setOutput('aes-dec-out', '❌ ' + data.error, 'error');
+      }
+    } catch (e) {
+      setOutput('aes-dec-out', '❌ Server error', 'error');
+    }
+  }
+
+  function clearAES() {
+    document.getElementById('aes-plaintext').value = '';
+    document.getElementById('aes-ciphertext-out').innerHTML =
+      '<span class="output-label">CIPHERTEXT</span><span style="color:var(--muted)">Encrypted text will appear here...</span>';
+    document.getElementById('aes-ciphertext-out').className = 'output-box cyan';
+    document.getElementById('aes-keys-out').style.display = 'none';
+  }
+
+  // ══════════════════════════
+  //  RSA GENERATE KEYS
+  // ══════════════════════════
+  async function generateRSAKeys() {
+    showSpinner('rsa-keygen-spinner', true);
+    try {
+      const res  = await fetch('/rsa/generate', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+      const data = await res.json();
+      showSpinner('rsa-keygen-spinner', false);
+
+      if (data.success) {
+        document.getElementById('rsa-public-out').innerHTML =
+          `<span class="output-label">PUBLIC KEY</span>${data.publicKey}`;
+        document.getElementById('rsa-private-out').innerHTML =
+          `<span class="output-label">PRIVATE KEY (Keep Secret!)</span>${data.privateKey}`;
+
+        // Auto-fill encrypt/decrypt fields
+        document.getElementById('rsa-enc-pubkey').value   = data.publicKey;
+        document.getElementById('rsa-dec-privkey').value  = data.privateKey;
+      }
+    } catch (e) {
+      showSpinner('rsa-keygen-spinner', false);
+      alert('Server error');
+    }
+  }
+
+  // ══════════════════════════
+  //  RSA ENCRYPT
+  // ══════════════════════════
+  async function rsaEncrypt() {
+    const text      = document.getElementById('rsa-plaintext').value.trim();
+    const publicKey = document.getElementById('rsa-enc-pubkey').value.trim();
+    if (!text || !publicKey) { alert('Enter text and public key!'); return; }
+
+    try {
+      const res  = await fetch('/rsa/encrypt', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({text, publicKey})
+      });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('rsa-enc-out').innerHTML =
+          `<span class="output-label">RSA CIPHERTEXT</span>${data.ciphertext}`;
+        document.getElementById('rsa-enc-out').className = 'output-box cyan';
+        document.getElementById('rsa-dec-cipher').value  = data.ciphertext;
+      } else {
+        setOutput('rsa-enc-out', '❌ ' + data.error, 'error');
+      }
+    } catch (e) {
+      setOutput('rsa-enc-out', '❌ Server error', 'error');
+    }
+  }
+
+  // ══════════════════════════
+  //  RSA DECRYPT
+  // ══════════════════════════
+  async function rsaDecrypt() {
+    const ciphertext = document.getElementById('rsa-dec-cipher').value.trim();
+    const privateKey = document.getElementById('rsa-dec-privkey').value.trim();
+    if (!ciphertext || !privateKey) { alert('Enter ciphertext and private key!'); return; }
+
+    try {
+      const res  = await fetch('/rsa/decrypt', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ciphertext, privateKey})
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOutput('rsa-dec-out', data.plaintext, 'success');
+      } else {
+        setOutput('rsa-dec-out', '❌ ' + data.error, 'error');
+      }
+    } catch (e) {
+      setOutput('rsa-dec-out', '❌ Server error', 'error');
+    }
+  }
+</script>
+</body>
+</html>
